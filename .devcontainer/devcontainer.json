@@ -1,0 +1,23 @@
+{
+  "name": "Meteor Bookmark Manager",
+  "dockerFile": "Dockerfile",
+  "forwardPorts": [3000],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "apollographql.vscode-apollo",
+        "mikestead.dotenv",
+        "pkief.material-icon-theme",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "remoteUser": "node"
+  // "postCreateCommand": "npm install -g meteor && meteor npm install"
+}

@@ -1,0 +1,28 @@
+{
+  "public": {
+    "appName": "智能书签管家",
+    "aiFeatures": {
+      "summarizationEnabled": true,
+      "tagSuggestionEnabled": true,
+      "classificationEnabled": true,
+      "relatedContentEnabled": true
+    }
+  },
+  "private": {
+    "openai": {
+      "apiKey": "YOUR_OPENAI_API_KEY_HERE"
+    },
+    "mongodb": {
+      "backupEnabled": true,
+      "backupCron": "0 0 * * *"
+    },
+    "security": {
+      "apiRateLimit": {
+        "aiRequests": {
+          "windowMs": 3600000, // 1小时
+          "max": 50 // 每小时最多50个请求
+        }
+      }
+    }
+  }
+}

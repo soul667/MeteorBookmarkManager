@@ -1,0 +1,46 @@
+{
+  "name": "bookmark-manager",
+  "private": true,
+  "scripts": {
+    "start": "meteor run",
+    "test": "meteor test --once --driver-package meteortesting:mocha",
+    "test-app": "TEST_WATCH=1 meteor test --full-app --driver-package meteortesting:mocha",
+    "visualize": "meteor --production --extra-packages bundle-visualizer"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.17.9",
+    "antd": "^5.3.0",
+    "@ant-design/icons": "^5.0.1",
+    "bcrypt": "^5.0.1",
+    "meteor-node-stubs": "^1.2.1",
+    "moment": "^2.29.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.2",
+    "openai": "^4.10.0",
+    "natural": "^6.5.0",
+    "node-fetch": "^3.3.1",
+    "cheerio": "^1.0.0-rc.12",
+    "vectorious": "^6.1.8",
+    "compromise": "^14.9.0",
+    "mongodb": "^5.7.0"
+  },
+  "devDependencies": {
+    "@types/meteor": "^2.8.1",
+    "@types/mocha": "^10.0.1",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "eslint": "^8.35.0",
+    "eslint-plugin-meteor": "^7.3.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^4.9.5"
+  },
+  "meteor": {
+    "mainModule": {
+      "client": "client/main.jsx",
+      "server": "server/main.js"
+    },
+    "testModule": "tests/main.js"
+  }
+}

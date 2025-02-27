@@ -1,0 +1,29 @@
+{
+  "private": {
+    "openai": {
+      "apiKey": ""
+    },
+    "emailConfig": {
+      "serviceName": "智能书签管家",
+      "smtpConfig": {
+        "host": "smtp.qq.com",
+        "port": 465,
+        "secure": true,
+        "auth": {
+          "user": "2194521087@qq.com",
+          "pass": "kpcbewtuhpbcebdj"
+        },
+        "tls": {
+          "rejectUnauthorized": false
+        }
+      }
+    }
+  },
+  "public": {
+    "ai": {
+      "defaultModel": "gpt-3.5-turbo",
+      "maxTokens": 150,
+      "temperature": 0.3
+    }
+  }
+}
