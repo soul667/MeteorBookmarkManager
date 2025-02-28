@@ -19,10 +19,10 @@ const BookmarkForm = ({
   loading: submitLoading 
 }) => {
   const [form] = Form.useForm();
-  const [url, setUrl] = useState(initialValues.url || '');
+  const [url, setUrl] = useState(initialValues?.url || '');
   const [aiEnabled, setAiEnabled] = useState(true);
-  const [aiSummary, setAiSummary] = useState(initialValues.aiGenerated?.summary || '');
-  const [aiTags, setAiTags] = useState([]);
+  const [aiSummary, setAiSummary] = useState(initialValues?.aiGenerated?.summary || '');
+  const [aiTags, setAiTags] = useState(initialValues?.tags || []);
   const [isUrlValidating, setIsUrlValidating] = useState(false);
 
   useEffect(() => {
@@ -30,10 +30,10 @@ const BookmarkForm = ({
     form.setFieldsValue({
       ...initialValues,
       aiGenerated: {
-        ...initialValues.aiGenerated,
+        ...(initialValues?.aiGenerated || {}),
         summary: aiSummary
       },
-      tags: aiTags.length > 0 ? [...aiTags] : initialValues.tags || []
+      tags: aiTags.length > 0 ? [...aiTags] : initialValues?.tags || []
     });
   }, [aiSummary, aiTags]);
 
@@ -89,7 +89,7 @@ const BookmarkForm = ({
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
       <Title level={4} style={{ marginBottom: 24 }}>
-        {initialValues._id ? '编辑书签' : '添加新书签'}
+        {initialValues?._id ? '编辑书签' : '添加新书签'}
       </Title>
       
       <Form
@@ -190,7 +190,7 @@ const BookmarkForm = ({
             {aiEnabled && (
               <BookmarkAIEnhancer 
                 url={url}
-                existingTags={initialValues.tags || []}
+                existingTags={initialValues?.tags || []}
                 onSummaryChange={handleSummaryChange}
                 onTagsChange={handleTagsChange}
               />

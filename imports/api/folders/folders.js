@@ -14,7 +14,7 @@ if (Meteor.isServer) {
 
 // 定义方法
 Meteor.methods({
-  'folders.insert'(folderData) {
+  'folders.insert': async function(folderData) {
     // 检查用户是否登录
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', '用户未登录');
@@ -31,7 +31,7 @@ Meteor.methods({
     
     // 检查同名文件夹
     if (folderData.parentId) {
-      const existingFolder = Folders.findOne({
+      const existingFolder = await Folders.findOneAsync({
         name: folderData.name,
         parentId: folderData.parentId,
         ownerId: this.userId
@@ -41,7 +41,7 @@ Meteor.methods({
         throw new Meteor.Error('duplicate-folder', '此文件夹已存在');
       }
     } else {
-      const existingRootFolder = Folders.findOne({
+      const existingRootFolder = await Folders.findOneAsync({
         name: folderData.name,
         parentId: { $exists: false },
         ownerId: this.userId
@@ -54,7 +54,7 @@ Meteor.methods({
     
     // 如果指定了父文件夹，确保它存在且属于该用户
     if (folderData.parentId) {
-      const parentFolder = Folders.findOne(folderData.parentId);
+      const parentFolder = await Folders.findOneAsync(folderData.parentId);
       if (!parentFolder) {
         throw new Meteor.Error('parent-not-found', '父文件夹不存在');
       }
@@ -74,10 +74,10 @@ Meteor.methods({
     };
     
     // 插入数据库
-    return Folders.insert(folder);
+    return await Folders.insertAsync(folder);
   },
   
-  'folders.update'(folderId, folderData) {
+  'folders.update': async function(folderId, folderData) {
     // 检查用户是否登录
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', '用户未登录');
@@ -93,7 +93,7 @@ Meteor.methods({
     });
     
     // 确保用户拥有此文件夹
-    const folder = Folders.findOne(folderId);
+    const folder = await Folders.findOneAsync(folderId);
     if (!folder) {
       throw new Meteor.Error('folder-not-found', '文件夹不存在');
     }
@@ -103,12 +103,12 @@ Meteor.methods({
     }
     
     // 检查周期引用
-    if (folderData.parentId && this.checkCyclicReference(folderId, folderData.parentId)) {
+    if (folderData.parentId && await this.checkCyclicReference(folderId, folderData.parentId)) {
       throw new Meteor.Error('cyclic-reference', '不能将文件夹移动到其子文件夹中');
     }
     
     // 更新文件夹
-    Folders.update(folderId, { 
+    await Folders.updateAsync(folderId, { 
       $set: { 
         ...folderData,
         updatedAt: new Date() 
@@ -118,7 +118,7 @@ Meteor.methods({
     return folderId;
   },
   
-  'folders.remove'(folderId) {
+  'folders.remove': async function(folderId) {
     // 检查用户是否登录
     if (!this.userId) {
       throw new Meteor.Error('not-authorized', '用户未登录');
@@ -128,7 +128,7 @@ Meteor.methods({
     check(folderId, String);
     
     // 确保用户拥有此文件夹
-    const folder = Folders.findOne(folderId);
+    const folder = await Folders.findOneAsync(folderId);
     if (!folder) {
       throw new Meteor.Error('folder-not-found', '文件夹不存在');
     }
@@ -138,24 +138,24 @@ Meteor.methods({
     }
     
     // 检查是否有子文件夹
-    const hasSubfolders = Folders.findOne({ parentId: folderId });
+    const hasSubfolders = await Folders.findOneAsync({ parentId: folderId });
     if (hasSubfolders) {
       throw new Meteor.Error('has-subfolders', '请先删除子文件夹');
     }
     
     // 检查文件夹中是否有书签
     const { Bookmarks } = require('../bookmarks/bookmarks');
-    const hasBookmarks = Bookmarks.findOne({ folderId: folderId });
+    const hasBookmarks = await Bookmarks.findOneAsync({ folderId: folderId });
     if (hasBookmarks) {
       throw new Meteor.Error('has-bookmarks', '请先移除或删除文件夹中的书签');
     }
     
     // 删除文件夹
-    Folders.remove(folderId);
+    await Folders.removeAsync(folderId);
   },
   
   // 检查周期引用
-  checkCyclicReference(folderId, newParentId) {
+  async checkCyclicReference(folderId, newParentId) {
     let currentParentId = newParentId;
     
     while (currentParentId) {
@@ -163,7 +163,7 @@ Meteor.methods({
         return true;
       }
       
-      const parent = Folders.findOne(currentParentId);
+      const parent = await Folders.findOneAsync(currentParentId);
       if (!parent) {
         return false;
       }
@@ -183,7 +183,11 @@ if (Meteor.isServer) {
       return this.ready();
     }
     
-    return Folders.find({ ownerId: this.userId });
+    console.log('Publishing folders for user:', this.userId);
+    
+    const query = { ownerId: this.userId };
+    console.log('Publishing folders for user with query:', query);
+    return Folders.find(query);
   });
   
   // 发布公开文件夹

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Meteor } from 'meteor/meteor';
 import { useTracker } from 'meteor/react-meteor-data';
@@ -9,11 +9,17 @@ import {
 import {
   PlusOutlined, MenuOutlined, AppstoreOutlined,
   TagsOutlined, UserOutlined, LogoutOutlined,
-  SettingOutlined, FolderOutlined, RobotOutlined
+  SettingOutlined, FolderOutlined, RobotOutlined,
+  UnorderedListOutlined, BarsOutlined, AppstoreAddOutlined,
+  FieldTimeOutlined
 } from '@ant-design/icons';
 import { Bookmarks } from '../../api/bookmarks/bookmarks';
 import { Folders } from '../../api/folders/folders';
 import BookmarkList from '../components/BookmarkList';
+import BookmarkGrid from '../components/BookmarkGrid';
+import BookmarkTree from '../components/BookmarkTree';
+import BookmarkWaterfall from '../components/BookmarkWaterfall';
+import BookmarkTimeline from '../components/BookmarkTimeline';
 import BookmarkForm from '../components/BookmarkForm';
 import FolderList from '../components/FolderList';
 import FolderForm from '../components/FolderForm';
@@ -33,21 +39,64 @@ const HomePage = () => {
   const [editingFolder, setEditingFolder] = useState(null);
   const [currentFilter, setCurrentFilter] = useState({});
   const [currentView, setCurrentView] = useState('all'); // 'all', 'folder', 'tags'
+  const [displayMode, setDisplayMode] = useState(() => {
+    return localStorage.getItem('bookmarkDisplayMode') || 'list';
+  });
   const [formSubmitting, setFormSubmitting] = useState(false);
+  
+  // 保存显示模式到 localStorage
+  useEffect(() => {
+    localStorage.setItem('bookmarkDisplayMode', displayMode);
+  }, [displayMode]);
 
   // 使用useTracker获取数据
-  const { bookmarks, folders, isLoading, currentUser } = useTracker(() => {
-    const bookmarksHandle = Meteor.subscribe('bookmarks');
-    const foldersHandle = Meteor.subscribe('folders');
-    const userHandle = Meteor.subscribe('userData');
+  const { bookmarks, folders, currentUser, isLoading } = useTracker(() => {
+    const userId = Meteor.userId();
+    const bookmarksHandle = Meteor.subscribe('bookmarks.user');
+    const foldersHandle = Meteor.subscribe('folders.user');
 
-    return {
-      bookmarks: Bookmarks.find(currentFilter).fetch(),
-      folders: Folders.find().fetch(),
-      isLoading: !bookmarksHandle.ready() || !foldersHandle.ready() || !userHandle.ready(),
-      currentUser: Meteor.user()
+    console.log('Subscription handles:', {
+      bookmarksReady: bookmarksHandle.ready(),
+      foldersReady: foldersHandle.ready()
+    });
+
+    const isReady = bookmarksHandle.ready() && foldersHandle.ready();
+
+    // 构建查询条件
+    if (!isReady || !userId) {
+      console.log('Subscriptions not ready or user not logged in');
+      return {
+        bookmarks: [],
+        folders: [],
+        currentUser: null,
+        isLoading: true
+      };
+    }
+
+    // Construct filter for bookmarks
+    const finalFilter = {
+      ownerId: userId,
+      ...(currentFilter.folderId ? { folderId: currentFilter.folderId } : {})
     };
-  });
+
+    console.log('Applying filter:', finalFilter);
+
+    // Apply filters and get data
+    const data = {
+      bookmarks: Bookmarks.find(finalFilter, { sort: { createdAt: -1 } }).fetch(),
+      folders: Folders.find({ ownerId: userId }).fetch(),
+      currentUser: Meteor.user(),
+      isLoading: false
+    };
+
+    console.log('Found items:', {
+      bookmarksCount: data.bookmarks.length,
+      foldersCount: data.folders.length,
+      filterApplied: !!currentFilter.folderId
+    });
+
+    return data;
+  }, [currentFilter]);
 
   // 退出登录处理
   const handleLogout = () => {
@@ -145,7 +194,11 @@ const HomePage = () => {
     <>
       <Menu
         mode="inline"
-        selectedKeys={[currentView === 'all' ? 'all' : '']}
+        selectedKeys={[
+          currentView === 'all' ? 'all' : 
+          currentView === 'folder' && currentFilter.folderId ? `folder-${currentFilter.folderId}` :
+          currentView === 'tags' ? 'tags' : ''
+        ]}
         defaultOpenKeys={['folders']}
         onSelect={handleMenuSelect}
       >
@@ -207,6 +260,38 @@ const HomePage = () => {
           </Space>
 
           <Space>
+            <Space.Compact>
+              <Button
+                type={displayMode === 'list' ? 'primary' : 'default'}
+                icon={<UnorderedListOutlined />}
+                onClick={() => setDisplayMode('list')}
+                title="列表视图"
+              />
+              <Button
+                type={displayMode === 'tree' ? 'primary' : 'default'}
+                icon={<BarsOutlined />}
+                onClick={() => setDisplayMode('tree')}
+                title="树状视图"
+              />
+              <Button
+                type={displayMode === 'grid' ? 'primary' : 'default'}
+                icon={<AppstoreOutlined />}
+                onClick={() => setDisplayMode('grid')}
+                title="网格视图"
+              />
+              <Button
+                type={displayMode === 'waterfall' ? 'primary' : 'default'}
+                icon={<AppstoreAddOutlined />}
+                onClick={() => setDisplayMode('waterfall')}
+                title="瀑布流视图"
+              />
+              <Button
+                type={displayMode === 'timeline' ? 'primary' : 'default'}
+                icon={<FieldTimeOutlined />}
+                onClick={() => setDisplayMode('timeline')}
+                title="时间轴视图"
+              />
+            </Space.Compact>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setBookmarkModalVisible(true)}>
               添加书签
             </Button>
@@ -217,14 +302,57 @@ const HomePage = () => {
         </Header>
 
         <Content style={{ margin: '24px 16px', minHeight: 280 }}>
-          <BookmarkList
-            bookmarks={bookmarks}
-            loading={isLoading}
-            onEdit={bookmark => {
-              setEditingBookmark(bookmark);
-              setBookmarkModalVisible(true);
-            }}
-          />
+          {displayMode === 'list' && (
+            <BookmarkList
+              bookmarks={bookmarks}
+              loading={isLoading}
+              onEdit={bookmark => {
+                setEditingBookmark(bookmark);
+                setBookmarkModalVisible(true);
+              }}
+            />
+          )}
+          {displayMode === 'tree' && (
+            <BookmarkTree
+              bookmarks={bookmarks}
+              folders={folders}
+              loading={isLoading}
+              onEdit={bookmark => {
+                setEditingBookmark(bookmark);
+                setBookmarkModalVisible(true);
+              }}
+            />
+          )}
+          {displayMode === 'grid' && (
+            <BookmarkGrid
+              bookmarks={bookmarks}
+              loading={isLoading}
+              onEdit={bookmark => {
+                setEditingBookmark(bookmark);
+                setBookmarkModalVisible(true);
+              }}
+            />
+          )}
+          {displayMode === 'waterfall' && (
+            <BookmarkWaterfall
+              bookmarks={bookmarks}
+              loading={isLoading}
+              onEdit={bookmark => {
+                setEditingBookmark(bookmark);
+                setBookmarkModalVisible(true);
+              }}
+            />
+          )}
+          {displayMode === 'timeline' && (
+            <BookmarkTimeline
+              bookmarks={bookmarks}
+              loading={isLoading}
+              onEdit={bookmark => {
+                setEditingBookmark(bookmark);
+                setBookmarkModalVisible(true);
+              }}
+            />
+          )}
         </Content>
       </Layout>
 
